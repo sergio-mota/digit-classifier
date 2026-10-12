@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 from torchvision.transforms import v2
 
 
@@ -66,3 +66,32 @@ class TestDataset(Dataset):
             features = self.transform(features)
 
         return features
+
+def get_data_loaders(data_dir : str, train_ratio: float, batch_size: int, num_workers: int):
+    print("Data configuration:")
+    print(f"Data directory: {data_dir}")
+    print(f"Batch size: {batch_size}")
+    print(f"Number of workers: {num_workers}")
+    print(f"Train ratio: {train_ratio}")
+
+    transform = v2.Compose([
+        v2.Normalize((0.5,), (0.5,))
+    ])
+
+    full_dataset = TrainDataset(data_dir, transform=transform)
+
+    train_size = int(len(full_dataset) * train_ratio)
+    valid_size = len(full_dataset) - train_size
+
+    train_dataset, valid_dataset = torch.utils.data.random_split(full_dataset, [train_size, valid_size])
+    test_dataset = TestDataset(data_dir, transform=transform)
+
+    print(f"Train dataset size: {len(train_dataset)}")
+    print(f"Validation dataset size: {len(valid_dataset)}")
+    print(f"Test dataset size: {len(test_dataset)}")
+    
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+
+    return train_loader, valid_loader, test_loader
