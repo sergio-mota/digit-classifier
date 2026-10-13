@@ -6,45 +6,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src.dataset import get_data_loaders
 from src.model import CNN_FC as DigitClassifier
-
-
-def train_one_epoch(training_dataloader, epoch_index, writer):
-    report_interval = len(training_dataloader) // 10
-
-    running_loss = 0.
-    last_loss = 0.
-    for i, batch in enumerate(training_dataloader):
-        inputs, labels = batch
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = loss_fn(outputs, labels)
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item()
-        if i % report_interval == report_interval - 1:
-            last_loss = running_loss / report_interval # loss per batch
-            print(f'  batch {i + 1} loss: {last_loss}')
-            x = epoch_index * len(training_dataloader) + i + 1
-            writer.add_scalar('loss/train', last_loss, x)
-            running_loss = 0.
-
-    return last_loss
-
-def validate_one_epoch(validation_dataloader):
-    model.eval()
-
-    running_loss = 0.0
-    with torch.no_grad():
-        for i, data in enumerate(validation_dataloader):
-            inputs, labels = data
-            outputs = model(inputs)
-            loss = loss_fn(outputs, labels)
-            running_loss += loss
-
-    avg_loss = running_loss / (i + 1)
-
-    return avg_loss
+from src.trainer import train_one_epoch, validate_one_epoch
 
 
 if __name__ == "__main__":
@@ -87,8 +49,19 @@ if __name__ == "__main__":
         print(f"Epoch {epoch + 1}/{cfg['train']['max_epochs']}")
 
         model.train(True)
-        avg_loss = train_one_epoch(train_dataloader, epoch, writer)
-        avg_vloss = validate_one_epoch(valid_dataloader)
+        avg_loss = train_one_epoch(
+            model,
+            optimizer,
+            loss_fn,
+            train_dataloader,
+            epoch,
+            writer=writer
+        )
+        avg_vloss = validate_one_epoch(
+            model,
+            loss_fn,
+            valid_dataloader
+        )
 
         print(f'LOSS train {avg_loss} valid {avg_vloss}')
         writer.add_scalars(
