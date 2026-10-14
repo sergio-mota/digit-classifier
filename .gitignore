@@ -8,4 +8,6 @@ data/*.pt
 .vscode/
 
 # Log
+mlruns/
 runs/
+mlflow.db

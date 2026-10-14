@@ -1,5 +1,9 @@
+import logging
+import mlflow
 import torch
 
+
+logger = logging.getLogger(__name__)
 
 def train_one_batch(
         model,
@@ -40,11 +44,16 @@ def train_one_epoch(
         running_loss += loss.item()
         if i % report_interval == report_interval - 1:
             last_loss = running_loss / report_interval
-            print(f'  batch {i + 1} loss: {last_loss}')
+            logger.info(f'Batch {i + 1} loss: {last_loss}')
             if writer:
                 x = epoch_index * len(dataloader) + i + 1
                 writer.add_scalar('loss/train', last_loss, x)
             running_loss = 0.
+            mlflow.log_metrics(
+                # {"batch_loss": last_loss, "batch_accuracy": batch_acc},
+                {"batch_loss": last_loss},
+                step=epoch_index * len(dataloader) + i,
+            )
 
     return last_loss
 
